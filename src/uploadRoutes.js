@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToS3 } from './s3.js';
+import { fileTypeFromBuffer } from 'file-type';
 
 const router = express.Router();
 const upload = multer();
@@ -11,18 +12,22 @@ router.post('/upload-single-file', upload.single('file'), async (req, res) => {
     if (!file) return res.status(400).send('Archivo no encontrado');
 
     const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf', 'video/mp4'];
-    if (!allowedTypes.includes(file.mimetype)) {
+    const detectedType = await fileTypeFromBuffer(file.buffer);
+    const mimeType = detectedType?.mime || file.mimetype;
+
+    if (!allowedTypes.includes(mimeType)) {
         return res.status(400).json({ error: 'Tipo de archivo no permitido' });
     }
+
     const fileName = `${uuidv4()}-${file.originalname}`;
 
     try {
-        await uploadToS3(file.buffer, fileName, file.mimetype);
+        await uploadToS3(file.buffer, fileName, mimeType);
 
         return res.status(200).json({
             message: 'Archivo subido exitosamente',
             fileName,
-            mimeType: file.mimetype,
+            mimeType,
         });
     } catch (error) {
         console.error('Error al subir a S3:', error);
