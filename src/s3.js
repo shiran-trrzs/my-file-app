@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
 dotenv.config();
@@ -12,14 +13,21 @@ export const s3 = new S3Client({
 });
 
 export const uploadToS3 = async (fileBuffer, key, mimetype) => {
-    const command = new PutObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: key,
-        Body: fileBuffer,
-        ContentType: mimetype,
+    const upload = new Upload({
+        client: s3,
+        params: {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: key,
+            Body: fileBuffer,
+            ContentType: mimetype,
+        },
     });
 
-    await s3.send(command);
+    upload.on("httpUploadProgress", (progress) => {
+        console.log("Progreso:", progress);
+    });
+
+    await upload.done();
 };
 
 export const getUrl = async (key) => {
