@@ -82,16 +82,10 @@ router.post('/upload-multiple-files', upload.array('files'), async (req, res) =>
     const totalFailedFiles = errors.length;
     const totalSuccessfulFiles = successes.length;
 
-    if (totalFailedFiles > 0) {
-        return res.status(207).json({
-            message: `Ocurrió un error en la carga de los archivos listados. Total: ${totalFailedFiles} archivo(s) fallido(s)`,
-            failed: errors
-        });
-    }
-
-    return res.status(200).json({
-        message: `Todos los ${totalSuccessfulFiles} archivos se cargaron correctamente`,
-        uploaded: successes
+    return res.status(207).json({
+        message: `Cargado(s) ${totalSuccessfulFiles} archivo(s) con éxito y ${totalFailedFiles} archivo(s) fallido(s)`,
+        uploaded: successes,
+        failed: errors
     });
 });
 
